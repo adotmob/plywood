@@ -941,7 +941,7 @@ module Plywood {
 
         if (aggregatorFilter) {
           if (this.versionBefore('0.8.2')) throw new Error(`can not express aggregate filter ${filter} in druid < 0.8.2`);
-          return this.makeExtractionFilter(filter);
+          if (this.versionBefore('0.9.1')) return this.makeExtractionFilter(filter);
         }
 
         if (filterAction instanceof MatchAction) {
@@ -2039,8 +2039,8 @@ return (start < 0 ?'-':'') + parts.join('.');
               } else {
                 var derivedAttribute = derivedAttributes[name];
                 if (derivedAttribute) {
-                  if (this.versionBefore('0.9.1') && !/^0\.9\.0-iap/.test(this.version)) {
-                    throw new Error(`can not have derived attributes in Druid select in ${this.version}, upgrade to 0.9.1 or 0.9.0-iap`);
+                  if (this.versionBefore('0.9.1')) {
+                    throw new Error(`can not have derived attributes in Druid select in ${this.version}, upgrade to 0.9.1`);
                   }
                   var dimensionInflater = this.expressionToDimensionInflater(derivedAttribute, name);
                   selectDimensions.push(dimensionInflater.dimension);
