@@ -752,8 +752,8 @@ module Plywood {
         value: attributeInfo.serialize(value)
       };
       if (extractionFn) {
-        druidFilter.type = "extraction";
         druidFilter.extractionFn = extractionFn;
+        if (this.versionBefore('0.9.1')) druidFilter.type = "extraction";
         if (this.versionBefore('0.9.0') && druidFilter.value === null) druidFilter.value = '';
       }
       return druidFilter;
@@ -762,8 +762,13 @@ module Plywood {
     public makeInFilter(ex: Expression, valueSet: Set): Druid.Filter {
       var attributeInfo = this.getSingleReferenceAttributeInfo(ex);
       var extractionFn = this.expressionToExtractionFn(ex);
+
       var elements = valueSet.elements;
-      if (elements.length < 2 || extractionFn || this.versionBefore('0.9.0')) {
+      if (
+        elements.length < 2 ||
+        (this.versionBefore('0.9.1') && extractionFn) ||
+        this.versionBefore('0.9.0')
+      ) {
         var fields = elements.map((value: string) => {
           return this.makeSelectorFilter(ex, value);
         });
@@ -771,11 +776,13 @@ module Plywood {
         return fields.length === 1 ? fields[0] : { type: "or", fields };
       }
 
-      return {
+      var inFilter: Druid.Filter = {
         type: 'in',
         dimension: attributeInfo.name,
         values: elements.map((value: string) => attributeInfo.serialize(value))
       };
+      if (extractionFn) inFilter.extractionFn = extractionFn;
+      return inFilter;
     }
 
     public makeBoundFilter(ex: Expression, range: PlywoodRange): Druid.Filter {
@@ -788,14 +795,20 @@ module Plywood {
       }
 
       var attributeInfo = this.getSingleReferenceAttributeInfo(ex);
+      var extractionFn = this.expressionToExtractionFn(ex);
+
+      if (this.versionBefore('0.9.1') && extractionFn) {
+        return this.makeJavaScriptFilter(ex.in(range));
+      }
 
       var boundFilter: Druid.Filter = {
         type: "bound",
         dimension: attributeInfo.name
       };
-      if (NumberRange.isNumberRange(range)) {
-        boundFilter.alphaNumeric = true;
-      }
+
+      if (extractionFn) boundFilter.extractionFn = extractionFn;
+      if (NumberRange.isNumberRange(range)) boundFilter.alphaNumeric = true;
+
       if (r0 != null) {
         boundFilter.lower = isDate(r0) ? r0.toISOString() : r0;
         if (bounds[0] === '(') boundFilter.lowerStrict = true;
@@ -811,15 +824,17 @@ module Plywood {
       var attributeInfo = this.getSingleReferenceAttributeInfo(ex);
       var extractionFn = this.expressionToExtractionFn(ex);
 
-      if (extractionFn) {
+      if (this.versionBefore('0.9.1') && extractionFn) {
         return this.makeExtractionFilter(ex.match(regex));
       }
 
-      return {
+      var regexFilter: Druid.Filter = {
         type: "regex",
         dimension: attributeInfo.name,
         pattern: regex
       };
+      if (extractionFn) regexFilter.extractionFn = extractionFn;
+      return regexFilter;
     }
 
     public makeContainsFilter(lhs: Expression, rhs: Expression, compare: string): Druid.Filter {
@@ -827,22 +842,25 @@ module Plywood {
         var attributeInfo = this.getSingleReferenceAttributeInfo(lhs);
         var extractionFn = this.expressionToExtractionFn(lhs);
 
-        if (extractionFn) {
+        if (this.versionBefore('0.9.0') && compare === ContainsAction.NORMAL) {
+          return this.makeJavaScriptFilter(lhs.contains(rhs, compare));
+        }
+
+        if (this.versionBefore('0.9.1') && extractionFn) {
           return this.makeExtractionFilter(lhs.contains(rhs, compare));
         }
 
-        if (compare === ContainsAction.IGNORE_CASE) {
-          return {
-            type: "search",
-            dimension: attributeInfo.name,
-            query: {
-              type: "insensitive_contains",
-              value: rhs.value
-            }
-          };
-        } else {
-          return this.makeJavaScriptFilter(lhs.contains(rhs, compare));
-        }
+        var searchFilter: Druid.Filter = {
+          type: "search",
+          dimension: attributeInfo.name,
+          query: {
+            type: compare === ContainsAction.IGNORE_CASE ? "insensitive_contains" : "contains",
+            value: rhs.value
+          }
+        };
+        if (extractionFn) searchFilter.extractionFn = extractionFn;
+        return searchFilter;
+
       } else {
         return this.makeJavaScriptFilter(lhs.contains(rhs, compare));
       }
