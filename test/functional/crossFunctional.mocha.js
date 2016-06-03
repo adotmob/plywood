@@ -34,15 +34,15 @@ var postgresRequester = postgresRequesterFactory({
   password: info.postgresPassword
 });
 
-// druidRequester = helper.verboseRequesterFactory({
-//   requester: druidRequester
-// });
-// mySqlRequester = helper.verboseRequesterFactory({
-//   requester: mySqlRequester
-// });
-// postgresRequester = helper.verboseRequesterFactory({
-//   requester: postgresRequester
-// });
+druidRequester = helper.verboseRequesterFactory({
+  requester: druidRequester
+});
+mySqlRequester = helper.verboseRequesterFactory({
+  requester: mySqlRequester
+});
+postgresRequester = helper.verboseRequesterFactory({
+  requester: postgresRequester
+});
 
 var attributes = [
   { name: 'time', type: 'TIME' },
@@ -252,7 +252,7 @@ describe("Cross Functional", function() {
         .apply('TotalAdded', '$wiki.sum($added)')
     }));
 
-    it('works with .contains(,normal)', equalityTest({
+    it.only('works with .contains(,normal)', equalityTest({
       executorNames: ['druid', 'mysql', 'postgres'],
       expression: ply()
         .apply('wiki', '$wiki.filter($cityName.contains("San", normal))')

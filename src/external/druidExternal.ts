@@ -1233,13 +1233,21 @@ module Plywood {
         }
 
         if (action instanceof LookupAction) {
-          var lookupExtractionFn: Druid.ExtractionFn = {
-            type: "lookup",
-            lookup: {
-              type: "namespace",
-              "namespace": action.lookup
-            }
+          var lookupExtractionFn: any = { // Druid.ExtractionFn
+            type: "registeredLookup",
+            lookup: action.lookup,
+            optimize: true // ToDo: this will be removed shortly
           };
+
+          if (this.versionBefore('0.9.1')) {
+            lookupExtractionFn = {
+              type: "lookup",
+              lookup: {
+                type: "namespace",
+                "namespace": action.lookup
+              }
+            };
+          }
 
           if (retainMissingValue) {
             lookupExtractionFn.retainMissingValue = true;
