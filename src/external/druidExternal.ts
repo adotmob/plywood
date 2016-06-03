@@ -842,8 +842,19 @@ module Plywood {
         var attributeInfo = this.getSingleReferenceAttributeInfo(lhs);
         var extractionFn = this.expressionToExtractionFn(lhs);
 
-        if (this.versionBefore('0.9.0') && compare === ContainsAction.NORMAL) {
-          return this.makeJavaScriptFilter(lhs.contains(rhs, compare));
+        if (this.versionBefore('0.9.0')) {
+          if (compare === ContainsAction.IGNORE_CASE) {
+            return {
+              type: "search",
+              dimension: attributeInfo.name,
+              query: {
+                type: "insensitive_contains",
+                value: rhs.value
+              }
+            }
+          } else {
+            return this.makeJavaScriptFilter(lhs.contains(rhs, compare));
+          }
         }
 
         if (this.versionBefore('0.9.1') && extractionFn) {
@@ -854,8 +865,9 @@ module Plywood {
           type: "search",
           dimension: attributeInfo.name,
           query: {
-            type: compare === ContainsAction.IGNORE_CASE ? "insensitive_contains" : "contains",
-            value: rhs.value
+            type: "contains",
+            value: rhs.value,
+            caseSensitive: compare === ContainsAction.NORMAL
           }
         };
         if (extractionFn) searchFilter.extractionFn = extractionFn;
@@ -1233,10 +1245,9 @@ module Plywood {
         }
 
         if (action instanceof LookupAction) {
-          var lookupExtractionFn: any = { // Druid.ExtractionFn
+          var lookupExtractionFn: Druid.ExtractionFn = {
             type: "registeredLookup",
-            lookup: action.lookup,
-            optimize: true // ToDo: this will be removed shortly
+            lookup: action.lookup
           };
 
           if (this.versionBefore('0.9.1')) {

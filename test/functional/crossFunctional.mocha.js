@@ -34,15 +34,15 @@ var postgresRequester = postgresRequesterFactory({
   password: info.postgresPassword
 });
 
-druidRequester = helper.verboseRequesterFactory({
-  requester: druidRequester
-});
-mySqlRequester = helper.verboseRequesterFactory({
-  requester: mySqlRequester
-});
-postgresRequester = helper.verboseRequesterFactory({
-  requester: postgresRequester
-});
+// druidRequester = helper.verboseRequesterFactory({
+//   requester: druidRequester
+// });
+// mySqlRequester = helper.verboseRequesterFactory({
+//   requester: mySqlRequester
+// });
+// postgresRequester = helper.verboseRequesterFactory({
+//   requester: postgresRequester
+// });
 
 var attributes = [
   { name: 'time', type: 'TIME' },
@@ -86,6 +86,8 @@ var druidExecutor = basicExecutorFactory({
       source: 'wikipedia',
       timeAttribute: 'time',
       context: {
+        // useCache: false,
+        // populateCache: false,
         timeout: 10000
       },
       attributes,
@@ -252,7 +254,7 @@ describe("Cross Functional", function() {
         .apply('TotalAdded', '$wiki.sum($added)')
     }));
 
-    it.only('works with .contains(,normal)', equalityTest({
+    it('works with .contains(,normal)', equalityTest({
       executorNames: ['druid', 'mysql', 'postgres'],
       expression: ply()
         .apply('wiki', '$wiki.filter($cityName.contains("San", normal))')
@@ -1003,7 +1005,7 @@ describe("Cross Functional", function() {
         .limit(20)
     }));
 
-    it.skip('works with derived dimension columns', equalityTest({
+    it('works with derived dimension columns', equalityTest({
       executorNames: ['druid', 'mysql', 'postgres'],
       expression: $('wiki')
         .filter('$cityName == "El Paso"')
