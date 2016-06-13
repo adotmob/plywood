@@ -1249,7 +1249,7 @@ module Plywood {
         return this.actionToJavaScriptExtractionFn(action);
       }
 
-      if (action instanceof AbsoluteAction || action instanceof PowerAction || action instanceof SizeAction) {
+      if (action instanceof AbsoluteAction || action instanceof PowerAction || action instanceof LengthAction) {
         return this.actionToJavaScriptExtractionFn(action);
       }
 
